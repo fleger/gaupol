@@ -28,6 +28,7 @@ import re
 import subprocess
 import stat
 import sys
+import shutil
 import urllib.parse
 
 
@@ -87,6 +88,12 @@ def atomic_open(path, mode="w", *args, **kwargs):
                 if os.path.isfile(path):
                     os.remove(path)
             os.rename(temp_path, path)
+    except OSError:
+        # os.rename and os.replace will fail if path and
+        # temp_path are not on the same device, for instance
+        # they can be on two separate branches of a union
+        # mount. Atomicity is not possible in this case.
+        shutil.move(temp_path, path)
     finally:
         try:
             os.remove(temp_path)
